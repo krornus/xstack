@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <sys/un.h>
 
@@ -12,6 +13,7 @@
 
 int main(int argc, char ** argv);
 void perform(char func);
+int sock_dir(char *name);
 void write_log(char * msg);
 
 int sock;
@@ -20,6 +22,8 @@ int main(int argc, char ** argv)
 {
     int client_sock, t, len;
     struct sockaddr_un local, remote;
+
+    sock_dir(SOCK_DIR);
 
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
         exit(1);
@@ -39,11 +43,11 @@ int main(int argc, char ** argv)
     
     prepare();
     
-    if(daemon(0,0) == -1)
-    {
-        write_log("DAEMON FAILURE\n");
-        exit(1);
-    }
+   // if(daemon(0,0) == -1)
+   // {
+   //     write_log("DAEMON FAILURE\n");
+   //     exit(1);
+   // }
 
     write_log("DAEMON SUCCESS\n");
     
@@ -76,6 +80,7 @@ void perform(char func)
             write_log("EXIT CALLED\n");
             close(sock);
             destruct();
+            printf("exiting\n");
             exit(0);
             break;
         case PUSH:
@@ -86,12 +91,23 @@ void perform(char func)
         case POP:
             /* REPLAY */
             write_log("POP CALLED\n");
+            pop();
             break;
         case PEEK:
             write_log("PEEK CALLED\n");
+            peek();
             /* PEEK */
             break;
     }
+}
+
+int sock_dir(char *name)
+{
+    struct stat st = {0};
+
+    if (stat(name, &st) == -1)
+            //TODO: make permissions minimal
+            mkdir(name, 0755);
 }
 
 void write_log(char * msg)
@@ -101,3 +117,4 @@ void write_log(char * msg)
     fputs(msg, log_f);
     fclose(log_f);
 }
+

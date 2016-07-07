@@ -6,10 +6,12 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
 
+#define DELAY 50
 
 XModifierKeymap *modifiers;
 Display *display;
 Window root;
+macro_stack *head;
 
 int prepare()
 {
@@ -22,6 +24,8 @@ int prepare()
     modifiers = XGetModifierMapping(display);
     screen = DefaultScreen(display);
     root = RootWindow(display, screen);
+
+    head = NULL;
 }
 
 void destruct()
@@ -30,14 +34,20 @@ void destruct()
     XDestroyWindow(display, root);
 }
 
-list * push()
+void push()
 {
+
     if(XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime) != GrabSuccess)
         exit(-1);
 
     XAllowEvents(display, SyncBoth, CurrentTime);
 
-    list * keys = event_listener();
+    key_list *keys = event_listener();
+
+    macro_stack *item = malloc(sizeof(macro_stack));
+    item->keys = keys;
+    item->prev = head;
+    head = item;
 
     XUngrabKeyboard(display, CurrentTime);
     XSync(display, False);
@@ -45,24 +55,38 @@ list * push()
 
 void pop()
 {
-    //replay_event(display, root, keys);
+    if(head == NULL)
+        return;
 
+    macro_stack *item = head;
+    replay_event(head->keys);
+    head = head->prev;
+
+    free(item->keys);
+    free(item);
 }
 
+void peek()
+{
+    if(head == NULL)
+        return;
 
-list * event_listener()
+    replay_event(head->keys);
+}
+
+key_list * event_listener()
 {
     XKeyEvent xkev;
 
-    list * head;
-    list * keys;
+    key_list * head;
+    key_list * keys;
 
-    head = malloc(sizeof(list));
+    head = malloc(sizeof(key_list));
     keys = head;
 
     xkev = get_next_event();
 
-    while(xkev.keycode != 24 && xkev.state !=4)
+    while(!(xkev.keycode == 24 && xkev.state == 4))
     {
         if(!is_modifier(xkev.keycode))
         {
@@ -70,7 +94,7 @@ list * event_listener()
             keys->key.state = xkev.state;
             keys->key.type = xkev.type;
 
-            keys->next = malloc(sizeof(list));
+            keys->next = malloc(sizeof(key_list));
             keys = keys->next;
             keys->next = NULL;
         }
@@ -82,18 +106,21 @@ list * event_listener()
 }
 
 
-void replay_event(list * keys)
+void replay_event(key_list * keys)
 {
-    int i = 0;
-
-    while(keys)
+    while(keys->next != NULL)
     {
         XKeyEvent event;
         event = get_key_event(keys->key);
 
-        XSendEvent(event.display, event.window, False, KeyPressMask|KeyReleaseMask, (XEvent *) &event); 
+        printf("replaying %d, %d\n", event.keycode, event.type);
 
-        i++;
+        XSelectInput(display, event.window, KeyPressMask|KeyReleaseMask); 
+        XSendEvent(display, event.window, False, KeyPressMask|KeyReleaseMask, (XEvent*)&event); 
+        
+        printf("sleeping\n");
+        usleep(1000*DELAY);
+
         keys = keys->next;
     }
 }
@@ -111,9 +138,14 @@ XKeyEvent get_key_event(key_data key)
 {
     XKeyEvent event;
 
+    Window win;
+    int revert;
+
+    XGetInputFocus(display, &win, &revert);
+
     event.type = key.type;
     event.display = display;
-    event.window = root;
+    event.window = win;
     event.root = root;
     event.subwindow = None;
     event.time = CurrentTime;

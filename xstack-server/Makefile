@@ -1,6 +1,6 @@
 CC=gcc
 DEPS=xstack.c
-FLAGS=-std=c99 -D _XOPEN_SOURCE
+FLAGS=-D _XOPEN_SOURCE
 
 INC=`pkg-config --cflags --libs x11` 
 CFLAGS=-I. $(INC) -lXtst $(FLAGS) 
@@ -17,4 +17,4 @@ xstack-server: $(OBJ)
 
 
 clean: 
-	rm -f $(ODIR)/*.o xstack 
+	rm -f $(ODIR)/*.o xstack-server 
