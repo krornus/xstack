@@ -17,7 +17,7 @@ int main(int argc, char ** argv)
 
     if (argc != 2)
     {
-        printf("usage: xstack-msg exit|push|pop|peek\n");
+        printf("usage: xstack-msg exit|push|pop|peek|status\n");
         exit(1);
     }
 
@@ -29,6 +29,8 @@ int main(int argc, char ** argv)
         cmd = POP;
     else if(strcmp("peek", argv[1]) == 0)
         cmd = PEEK;
+    else if(strcmp("status", argv[1]) == 0)
+        cmd = -1;
     else
     {
         printf("invalid command, usage: xstack-msg exit|push|pop|peek\n");
@@ -51,11 +53,20 @@ int main(int argc, char ** argv)
         exit(1);
     }
 
-    if (send(sock, &cmd, 1, 0) == -1) 
+    /* 
+       this stops an issue on i3wm where
+       keyboard grab fails due to race condition 
+    */
+    usleep(200000);
+
+    if (cmd != -1 && send(sock, &cmd, 1, 0) == -1) 
     {
         perror("could not send\n");
         exit(1);
     }
+
+    if (cmd == -1)
+        printf("xstack-server running normally\n");
 
     close(sock);
 

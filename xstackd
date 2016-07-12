@@ -15,7 +15,7 @@ case "$1" in
         start
         ;;
     *)
-        echo "usage: ./xstack.d <start|stop|restart|status>"
+        echo "usage: ./xstackd <start|stop|restart|status>"
         exit 1
         ;;
 esac
