@@ -5,13 +5,16 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
+#include "hash.h"
 
-#define DELAY 50
+#define DELAY 20 
 
 XModifierKeymap *modifiers;
 Display *display;
 Window root;
 macro_stack *head;
+
+extern kv_pair *hash[HASH_SIZE];
 
 int prepare()
 {
@@ -19,7 +22,11 @@ int prepare()
     int keyboard_handle;
 
     if(!(display = XOpenDisplay(0)))
+    {
+        perror("failed to open display!\n");
         exit(-1);
+    }
+    
 
     modifiers = XGetModifierMapping(display);
     screen = DefaultScreen(display);
@@ -38,7 +45,10 @@ void push()
 {
 
     if(XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime) != GrabSuccess)
-        exit(-1);
+    {
+        perror("failed to grab keyboard!\n");
+        return;
+    }
 
     XAllowEvents(display, SyncBoth, CurrentTime);
 
@@ -110,19 +120,39 @@ void replay_event(key_list * keys)
 {
     while(keys->next != NULL)
     {
+        int keycode, type;
+
         XKeyEvent event;
         event = get_key_event(keys->key);
 
-        printf("replaying %d, %d\n", event.keycode, event.type);
+        press_modifiers(keys->key.state, True);  
 
-        XSelectInput(display, event.window, KeyPressMask|KeyReleaseMask); 
-        XSendEvent(display, event.window, False, KeyPressMask|KeyReleaseMask, (XEvent*)&event); 
-        
-        printf("sleeping\n");
+        keycode = keys->key.keycode;
+        type = ~(keys->key.type-2)&0x1;
+
+        insert(keycode, type);
+
+        XTestFakeKeyEvent(display, keycode, type, CurrentTime);
+
+        press_modifiers(keys->key.state, False);  
+       
         usleep(1000*DELAY);
 
         keys = keys->next;
     }
+    
+    int i;
+    for(i = 0; i < HASH_SIZE; i++)
+    {
+        if(hash[i] && hash[i]->value)
+        {
+            XTestFakeKeyEvent(display, hash[i]->key, False, CurrentTime);
+            free(hash[i]);
+            hash[i] = NULL;
+        }
+    }
+
+    XFlush(display);
 }
 
 
@@ -160,13 +190,13 @@ XKeyEvent get_key_event(key_data key)
     return event;
 }
 
-
 int is_modifier(int keycode)
 {
     if(!keycode)
         return 0;
 
     int i;
+
     for(i = 0; i < 8 * modifiers->max_keypermod; i++)
     {
         if(modifiers->modifiermap[i] == keycode)
@@ -176,5 +206,25 @@ int is_modifier(int keycode)
     }
 
     return 0;
+}
+
+void press_modifiers(int state, int type)
+{
+    
+    short shift = 0;
+    int max = modifiers->max_keypermod;
+    int i;
+    
+    for(i = 0; i < 8 * max; i+=max)
+    {
+        if((state>>shift)&0x1)
+        {
+            int keycode = modifiers->modifiermap[i];
+
+            insert(keycode, type);
+            XTestFakeKeyEvent(display, modifiers->modifiermap[i], type, CurrentTime);
+        }
+        shift++;
+    }
 }
 

@@ -1,0 +1,83 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          xstack 
+
+# Required-Start:    $syslog $remote_fs
+# Required-Stop:     $syslog $remote_fs
+# Should-Start:      $network avahi-daemon slapd nslcd
+# Should-Stop:       $network
+# X-Start-Before:    samba
+# X-Stop-After:      samba
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+
+# Short-Description: Shortcut key stack manager 
+# Description:       Allows pushing and popping of shortcut-key combinations  
+### END INIT INFO
+
+# Author: Spencer Powell <krornus@gmail.com> 
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/xstackd
+NAME=xstackd
+PIDFILE=/var/run/cups/$NAME.pid
+DESC="keyboard shortcut stack based managment"
+SCRIPTNAME=/etc/init.d/xstack
+
+unset TMPDIR
+
+# Exit if the package is not installed
+test -x $DAEMON || exit 0
+
+# Read configuration variable file if it is present
+if [ -r /etc/default/cups ]; then
+  . /etc/default/cups
+fi
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC" "$NAME"
+
+	mkdir -p `dirname "$PIDFILE"`
+	if [ "$LOAD_LP_MODULE" = "yes" -a -f /usr/lib/cups/backend/parallel \
+             -a -f /proc/devices -a -f /proc/modules -a -x /sbin/modprobe ]; then
+	  modprobe -q -b lp || true
+	  modprobe -q -b ppdev || true
+	  modprobe -q -b parport_pc || true
+	fi
+
+	start-stop-daemon --start --quiet --oknodo --pidfile "$PIDFILE" --exec $DAEMON
+	status=$?
+	[ $status = 0 ] && coldplug_usb_printers
+	log_end_msg $status
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC" "$NAME"
+	start-stop-daemon --stop --quiet --retry 5 --oknodo --pidfile $PIDFILE --name $NAME
+	status=$?
+	log_end_msg $status
+	;;
+  reload|force-reload)
+       log_daemon_msg "Reloading $DESC" "$NAME"
+       start-stop-daemon --stop --quiet --pidfile $PIDFILE --name $NAME --signal 1
+       status=$?
+       log_end_msg $status
+       ;;
+  restart)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	if start-stop-daemon --stop --quiet --retry 5 --oknodo --pidfile $PIDFILE --name $NAME; then
+		start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec $DAEMON
+	fi
+	status=$?
+	log_end_msg $status
+	;;
+  status)
+	status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|status}" >&2
+	exit 3
+	;;
+esac
+
+exit 0

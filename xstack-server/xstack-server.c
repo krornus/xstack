@@ -36,18 +36,18 @@ int main(int argc, char ** argv)
     len = strlen(local.sun_path) + sizeof(local.sun_family);
 
     if (bind(sock, (struct sockaddr *)&local, len) == -1) 
-        exit(1);
+        exit(2);
 
     if (listen(sock, 1) == -1) 
-        exit(1);
+        exit(3);
     
     prepare();
     
-   // if(daemon(0,0) == -1)
-   // {
-   //     write_log("DAEMON FAILURE\n");
-   //     exit(1);
-   // }
+    if(daemon(0,0) == -1)
+    {
+        write_log("DAEMON FAILURE\n");
+        exit(1);
+    }
 
     write_log("DAEMON SUCCESS\n");
     
