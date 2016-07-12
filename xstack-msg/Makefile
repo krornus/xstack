@@ -1,6 +1,6 @@
 CC=gcc
 DEPS=
-FLAGS=-std=c99 
+FLAGS=
 
 INC=
 CFLAGS=-I. $(INC) $(FLAGS) 
