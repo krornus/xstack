@@ -60,13 +60,15 @@ int main(int argc, char ** argv)
     */
     usleep(200000);
 
-    if (cmd != -1 && send(sock, &cmd, 1, 0) == -1) 
+    if (cmd != -1)
     {
-        perror("could not send\n");
-        exit(1);
+        if(send(sock, &cmd, 1, 0) == -1)
+        {
+            perror("could not send\n");
+            exit(1);
+        }
     }
-
-    if (cmd == -1)
+    else
         printf("xstack-server running normally\n");
 
     close(sock);

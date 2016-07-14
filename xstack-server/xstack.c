@@ -1,13 +1,13 @@
-#include <xstack.h>
 #include <unistd.h>
 #include <stdio.h>        
 #include <stdlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
+#include "xstack.h"
 #include "hash.h"
 
-#define DELAY 20 
+#define DELAY 30
 
 XModifierKeymap *modifiers;
 Display *display;
@@ -96,7 +96,7 @@ key_list * event_listener()
 
     xkev = get_next_event();
 
-    while(!(xkev.keycode == 24 && xkev.state == 4))
+    while(!(xkev.keycode == 24 && clean_modifier(xkev.state) == 4))
     {
         if(!is_modifier(xkev.keycode))
         {
@@ -113,6 +113,12 @@ key_list * event_listener()
     }
 
     return head;
+}
+
+int clean_modifier(int state)
+{
+    /* only capture shift, alt, win, ctrl modifiers */
+    return state & (ShiftMask | ControlMask | Mod1Mask | Mod4Mask);
 }
 
 

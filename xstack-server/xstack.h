@@ -29,3 +29,4 @@ XKeyEvent get_next_event(void);
 XKeyEvent get_key_event(key_data key);
 int is_modifier(int keycode);
 void press_modifiers(int state, int type);
+int clean_modifier(int state);
