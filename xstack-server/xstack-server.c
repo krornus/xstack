@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <libconfig.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -7,21 +8,26 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/un.h>
-
 #include "socket.h"
-#include "xstack.h"
-
-int main(int argc, char ** argv);
-void perform(char func);
-int sock_dir(char *name);
-void write_log(char * msg);
+#include "xstack-server.h"
 
 int sock;
+Display * display;
+config_data settings;
 
 int main(int argc, char ** argv)
 {
+
     int client_sock, t, len;
     struct sockaddr_un local, remote;
+
+    if(!(display = XOpenDisplay(0)))
+    {
+        perror("failed to open display!\n");
+        exit(-1);
+    }
+
+    parse_conf();
 
     sock_dir(SOCK_DIR);
 
@@ -118,3 +124,75 @@ void write_log(char * msg)
     fclose(log_f);
 }
 
+
+void parse_conf()
+{
+    char *file = "/.xstackrc";
+    char *path = getenv("HOME");
+
+    strcat(path, file);
+
+    if(access(path, F_OK|R_OK) == -1)
+    {
+        /* CANNOT ACCESS CONF */
+        settings.quit.state = QUIT_MOD_DEFAULT;
+        settings.quit.keycode = QUIT_KEYCODE_DEFAULT;
+        settings.delay.state = DELAY_MOD_DEFAULT;
+        settings.delay.keycode = DELAY_KEYCODE_DEFAULT;
+        settings.key_press_delay = KEY_DELAY_DEFAULT;
+        settings.key_press_delay = INSERT_DELAY_DEFAULT;
+        return;
+    }
+
+    config_t *cfg;
+    cfg = malloc(sizeof(config_t));
+
+    config_init(cfg);
+
+    if(!config_read_file(cfg, path))
+    {
+        fprintf(stderr, 
+                "error parsing config, line: %d\n%s\n", 
+                config_error_line(cfg),
+                config_error_text(cfg));
+        config_destroy(cfg);
+        exit(1);
+    }
+
+    /* quit key */
+    get_key_settings(cfg, &(settings.quit.keycode), "quit_key", QUIT_KEYCODE_DEFAULT);
+    get_key_settings(cfg, &(settings.delay.keycode), "delay_key", DELAY_KEYCODE_DEFAULT);
+    
+    if(!config_lookup_int(cfg, "quit_modifier", &(settings.quit.state)))
+        settings.quit.state = QUIT_MOD_DEFAULT;
+
+    if(!config_lookup_int(cfg, "delay_modifier", &(settings.delay.state)))
+        settings.delay.state = DELAY_MOD_DEFAULT;
+
+    if(!config_lookup_int(cfg, "key_press_delay", &(settings.key_press_delay)))
+        settings.key_press_delay = KEY_DELAY_DEFAULT;
+
+    if(!config_lookup_int(cfg, "insert_delay", &(settings.insert_delay)))
+        settings.insert_delay = INSERT_DELAY_DEFAULT;
+}
+
+void get_key_settings(config_t *cfg, int *keycode, char *name, int def)
+{
+    const char *keystr; 
+    *keycode = -1;
+
+    if(config_lookup_string(cfg, name, &keystr))
+    {
+        KeySym ksym;
+        ksym = XStringToKeysym(keystr);
+        *keycode = (int)XKeysymToKeycode(display, ksym);
+    }
+
+    if(*keycode == -1)
+    {
+        config_lookup_int(cfg, name, keycode);
+    }
+
+    if(*keycode == -1)
+        *keycode = def;
+}

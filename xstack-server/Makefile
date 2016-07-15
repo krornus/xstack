@@ -2,7 +2,7 @@ CC=gcc
 DEPS=xstack.c hash.c
 FLAGS=-D _XOPEN_SOURCE
 
-INC=`pkg-config --cflags --libs x11` 
+INC=`pkg-config --cflags --libs x11 libconfig` 
 CFLAGS=-I. $(INC) -lXtst $(FLAGS) 
 
 ODIR=obj

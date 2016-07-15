@@ -7,10 +7,8 @@
 #include "xstack.h"
 #include "hash.h"
 
-#define DELAY 30
-
 XModifierKeymap *modifiers;
-Display *display;
+extern Display *display;
 Window root;
 macro_stack *head;
 
@@ -20,13 +18,6 @@ int prepare()
 {
     int screen;
     int keyboard_handle;
-
-    if(!(display = XOpenDisplay(0)))
-    {
-        perror("failed to open display!\n");
-        exit(-1);
-    }
-    
 
     modifiers = XGetModifierMapping(display);
     screen = DefaultScreen(display);
@@ -142,7 +133,7 @@ void replay_event(key_list * keys)
 
         press_modifiers(keys->key.state, False);  
        
-        usleep(1000*DELAY);
+        usleep(1000*KEY_DELAY_DEFAULT);
 
         keys = keys->next;
     }
