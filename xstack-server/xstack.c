@@ -1,18 +1,15 @@
-#include <unistd.h>
-#include <stdio.h>        
 #include <stdlib.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/XTest.h>
-#include "xstack.h"
+#include "xstack-server.h"
 #include "hash.h"
 
+
 XModifierKeymap *modifiers;
-extern Display *display;
 Window root;
 macro_stack *head;
 
 extern kv_pair *hash[HASH_SIZE];
+extern Display *display;
+extern config_data settings;
 
 int prepare()
 {
@@ -87,19 +84,31 @@ key_list * event_listener()
 
     xkev = get_next_event();
 
-    while(!(xkev.keycode == 24 && clean_modifier(xkev.state) == 4))
+    while(!(xkev.keycode == settings.quit.keycode && 
+            clean_modifier(xkev.state) == settings.quit.state))
     {
         if(!is_modifier(xkev.keycode))
         {
-            keys->key.keycode = xkev.keycode;
-            keys->key.state = xkev.state;
-            keys->key.type = xkev.type;
+            if(xkev.keycode == settings.delay.keycode &&
+                    clean_modifier(xkev.state) == settings.delay.state)
+            {
+                keys->key.keycode = -1;
 
-            keys->next = malloc(sizeof(key_list));
-            keys = keys->next;
-            keys->next = NULL;
+                keys->next = malloc(sizeof(key_list));
+                keys = keys->next;
+                keys->next = NULL;
+            }
+            else
+            {
+                keys->key.keycode = xkev.keycode;
+                keys->key.state = xkev.state;
+                keys->key.type = xkev.type;
+
+                keys->next = malloc(sizeof(key_list));
+                keys = keys->next;
+                keys->next = NULL;
+            }
         }
-
         xkev = get_next_event();
     }
 
@@ -117,6 +126,14 @@ void replay_event(key_list * keys)
 {
     while(keys->next != NULL)
     {
+        if(keys->key.keycode == -1)
+        {
+            XFlush(display);
+            usleep(10000*settings.insert_delay);    
+            keys = keys->next;
+            continue;
+        }
+
         int keycode, type;
 
         XKeyEvent event;
@@ -133,7 +150,7 @@ void replay_event(key_list * keys)
 
         press_modifiers(keys->key.state, False);  
        
-        usleep(1000*KEY_DELAY_DEFAULT);
+        usleep(1000*settings.key_press_delay);
 
         keys = keys->next;
     }

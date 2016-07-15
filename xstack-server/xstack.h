@@ -3,7 +3,7 @@
 #include <X11/extensions/XTest.h>
 
 #define KEY_DELAY_DEFAULT 10
-#define INSERT_DELAY_DEFAULT 100
+#define INSERT_DELAY_DEFAULT 10
 #define QUIT_KEYCODE_DEFAULT 24 
 #define QUIT_MOD_DEFAULT 4 
 #define DELAY_KEYCODE_DEFAULT 40 

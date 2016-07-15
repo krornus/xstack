@@ -1,13 +1,10 @@
-#include <stdio.h>
 #include <libconfig.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <sys/un.h>
+#include <unistd.h>
 #include "socket.h"
 #include "xstack-server.h"
 
@@ -23,8 +20,8 @@ int main(int argc, char ** argv)
 
     if(!(display = XOpenDisplay(0)))
     {
-        perror("failed to open display!\n");
-        exit(-1);
+        write_log("ERROR: XOpenDisplay failed");
+        exit(1);
     }
 
     parse_conf();
@@ -32,7 +29,10 @@ int main(int argc, char ** argv)
     sock_dir(SOCK_DIR);
 
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+    {
+        write_log("ERROR: failed to create socket");
         exit(1);
+    }
 
     local.sun_family = AF_UNIX;
     strcpy(local.sun_path, SOCK_PATH);
@@ -42,20 +42,26 @@ int main(int argc, char ** argv)
     len = strlen(local.sun_path) + sizeof(local.sun_family);
 
     if (bind(sock, (struct sockaddr *)&local, len) == -1) 
-        exit(2);
+    {
+        write_log("ERROR: failed to bind to socket");
+        exit(1);
+    }
 
     if (listen(sock, 1) == -1) 
-        exit(3);
+    {
+        write_log("ERROR: failed to listen on socket");
+        exit(1);
+    }
     
+    write_log("INFO: successfully established ipc connection");
     prepare();
     
     if(daemon(0,0) == -1)
     {
-        write_log("DAEMON FAILURE\n");
+        write_log("ERROR: failed to daemonize process");
         exit(1);
     }
 
-    write_log("DAEMON SUCCESS\n");
     
     while(1)
     {
@@ -64,12 +70,15 @@ int main(int argc, char ** argv)
 
         t = sizeof(remote);
         if ((client_sock = accept(sock, (struct sockaddr *)&remote, &t)) == -1) 
+        {
+            write_log("ERROR: failed to accept client on socket");
             exit(1);
+        }
 
         recv(client_sock, buf, 1, 0);
         close(client_sock);
-
-        write_log("RECIEVED MESSAGE\n");
+        
+        write_log("INFO: received command");
 
         perform(buf[0]);
     }
@@ -79,28 +88,26 @@ int main(int argc, char ** argv)
 
 void perform(char func)
 {
-    write_log("perform() ENTRY\n");
     switch(func)
     {
         case EXIT:
-            write_log("EXIT CALLED\n");
+            write_log("INFO: received exit command");
             close(sock);
             destruct();
-            printf("exiting\n");
             exit(0);
             break;
         case PUSH:
             /* LISTEN */
-            write_log("PUSH CALLED\n");
+            write_log("INFO: received push command");
             push();
             break;
         case POP:
             /* REPLAY */
-            write_log("POP CALLED\n");
+            write_log("INFO: received pop command");
             pop();
             break;
         case PEEK:
-            write_log("PEEK CALLED\n");
+            write_log("INFO: received peek command");
             peek();
             /* PEEK */
             break;

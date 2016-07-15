@@ -1,4 +1,5 @@
 // dont also include in xstack.c
+#include <libconfig.h>
 #include "xstack.h" 
 
 int main(int argc, char ** argv);
