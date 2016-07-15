@@ -20,7 +20,7 @@ int main(int argc, char ** argv)
 
     if(!(display = XOpenDisplay(0)))
     {
-        write_log("ERROR: XOpenDisplay failed");
+        write_log("ERROR: XOpenDisplay failed\n");
         exit(1);
     }
 
@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
 
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
     {
-        write_log("ERROR: failed to create socket");
+        write_log("ERROR: failed to create socket\n");
         exit(1);
     }
 
@@ -43,22 +43,22 @@ int main(int argc, char ** argv)
 
     if (bind(sock, (struct sockaddr *)&local, len) == -1) 
     {
-        write_log("ERROR: failed to bind to socket");
+        write_log("ERROR: failed to bind to socket\n");
         exit(1);
     }
 
     if (listen(sock, 1) == -1) 
     {
-        write_log("ERROR: failed to listen on socket");
+        write_log("ERROR: failed to listen on socket\n");
         exit(1);
     }
     
-    write_log("INFO: successfully established ipc connection");
+    write_log("INFO: successfully established ipc connection\n");
     prepare();
     
     if(daemon(0,0) == -1)
     {
-        write_log("ERROR: failed to daemonize process");
+        write_log("ERROR: failed to daemonize process\n");
         exit(1);
     }
 
@@ -71,15 +71,13 @@ int main(int argc, char ** argv)
         t = sizeof(remote);
         if ((client_sock = accept(sock, (struct sockaddr *)&remote, &t)) == -1) 
         {
-            write_log("ERROR: failed to accept client on socket");
+            write_log("ERROR: failed to accept client on socket\n");
             exit(1);
         }
 
         recv(client_sock, buf, 1, 0);
         close(client_sock);
         
-        write_log("INFO: received command");
-
         perform(buf[0]);
     }
 
@@ -91,23 +89,23 @@ void perform(char func)
     switch(func)
     {
         case EXIT:
-            write_log("INFO: received exit command");
+            write_log("INFO: received exit command\n");
             close(sock);
             destruct();
             exit(0);
             break;
         case PUSH:
             /* LISTEN */
-            write_log("INFO: received push command");
+            write_log("INFO: received push command\n");
             push();
             break;
         case POP:
             /* REPLAY */
-            write_log("INFO: received pop command");
+            write_log("INFO: received pop command\n");
             pop();
             break;
         case PEEK:
-            write_log("INFO: received peek command");
+            write_log("INFO: received peek command\n");
             peek();
             /* PEEK */
             break;
