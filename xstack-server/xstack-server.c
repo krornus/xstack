@@ -78,6 +78,7 @@ int main(int argc, char ** argv)
         recv(client_sock, buf, 1, 0);
         close(client_sock);
         
+
         perform(buf[0]);
     }
 
@@ -130,6 +131,26 @@ void write_log(char * msg)
 }
 
 
+/* CONFIG FILE PARSING */
+/************************
+
+quit_key: integer keycode or string keysym
+
+quit_modifier: integer modifier mask, 
+               uses X11 modifier masks
+
+delay_key: integer keycode or string keysym
+
+delay_modifier: integer modifier mask, 
+                uses X11 modifier masks
+
+key_press_delay: integer time in milliseconds, 
+                 standard delay between keypresses
+
+insert_delay: integer time in milliseconds
+              user inserted delay time
+
+************************/
 void parse_conf()
 {
     char *file = "/.xstackrc";
@@ -164,7 +185,6 @@ void parse_conf()
         exit(1);
     }
 
-    /* quit key */
     get_key_settings(cfg, &(settings.quit.keycode), "quit_key", QUIT_KEYCODE_DEFAULT);
     get_key_settings(cfg, &(settings.delay.keycode), "delay_key", DELAY_KEYCODE_DEFAULT);
     
@@ -179,6 +199,7 @@ void parse_conf()
 
     if(!config_lookup_int(cfg, "insert_delay", &(settings.insert_delay)))
         settings.insert_delay = INSERT_DELAY_DEFAULT;
+
 }
 
 void get_key_settings(config_t *cfg, int *keycode, char *name, int def)

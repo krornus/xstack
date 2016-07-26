@@ -4,10 +4,15 @@
 
 #define KEY_DELAY_DEFAULT 10
 #define INSERT_DELAY_DEFAULT 10
+
 #define QUIT_KEYCODE_DEFAULT 24 
 #define QUIT_MOD_DEFAULT 4 
+
 #define DELAY_KEYCODE_DEFAULT 40 
 #define DELAY_MOD_DEFAULT 4 
+
+#define NAMED_KEYCODE_DEFAULT 57
+#define NAMED_MOD_DEFAULT 4
 
 typedef struct key_data_s {
     int keycode;

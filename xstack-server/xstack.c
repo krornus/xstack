@@ -2,6 +2,8 @@
 #include "xstack-server.h"
 #include "hash.h"
 
+#define MILLISECONDS 10000
+
 
 XModifierKeymap *modifiers;
 Window root;
@@ -129,7 +131,7 @@ void replay_event(key_list * keys)
         if(keys->key.keycode == -1)
         {
             XFlush(display);
-            usleep(10000*settings.insert_delay);    
+            usleep(MILLISECONDS*settings.insert_delay);    
             keys = keys->next;
             continue;
         }
@@ -150,7 +152,7 @@ void replay_event(key_list * keys)
 
         press_modifiers(keys->key.state, False);  
        
-        usleep(1000*settings.key_press_delay);
+        usleep(MILLISECONDS*settings.key_press_delay);
 
         keys = keys->next;
     }
