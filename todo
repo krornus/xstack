@@ -1,0 +1,5 @@
+combine into one elf
+config docs
+config keys to strings
+allow push from stdin for piping (vim style syntax)
+dbus
