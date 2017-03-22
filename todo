@@ -3,3 +3,5 @@ config docs
 config keys to strings
 allow push from stdin for piping (vim style syntax)
 dbus
+named macros
+define named macros in config
