@@ -1,9 +1,9 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "xstack-server.h"
 #include "hash.h"
 
 #define MILLISECONDS 10000
-
 
 XModifierKeymap *modifiers;
 Window root;

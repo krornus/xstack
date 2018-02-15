@@ -1,6 +1,6 @@
 CC=gcc
 DEPS=xstack.c hash.c
-FLAGS=-D _XOPEN_SOURCE
+FLAGS=-D _XOPEN_SOURCE -D _DEFAULT_SOURCE
 
 INC=`pkg-config --cflags --libs x11 libconfig` 
 CFLAGS=-I. $(INC) -lXtst $(FLAGS) 

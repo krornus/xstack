@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
 
     if (connect(sock, (struct sockaddr *)&remote, len) == -1) 
     {
-        perror("could not connect\n");
+        perror("connect");
         exit(1);
     }
 
